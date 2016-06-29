@@ -87,13 +87,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-# virtualenv
-.venv/
-
-# Pycharm
-.idea/
-
-# Vim Temp.
-*.swp
-*~
