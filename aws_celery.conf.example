@@ -1,0 +1,14 @@
+description "AWS EC2 Spot Price Crawler"
+
+start on runlevel [2345]
+stop on runlevel [06]
+
+env PYTHONPATH='/path/to/project'
+
+script
+    exec $PYTHONPATH/.venv/bin/celery worker -A tasks.celeryapp -E -B --pidfile=/var/run/aws-celery.pid -Q celery,crawl
+end script
+
+post-stop script
+    rm -f /var/run/aws-celery.pid
+end script

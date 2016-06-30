@@ -1,0 +1,36 @@
+from celery.beat import crontab
+
+DEFAULT_REGION = 'ap-northeast-1'   # Tokyo
+
+BROKER_URL = 'amqp://username:password@host/vhost'
+#CELERY_RESULT_BACKEND = 'amqp'
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_ENABLE_UTC = True
+
+CELERYBEAT_SCHEDULE = {
+    'get_region': {
+        'task': 'tasks.tasks.crawl_region',
+        'schedule': crontab(hour=0, minute=0)   # once a day
+    },
+    'get_az': {
+        'task': "tasks.tasks.crawl_az",
+        'schedule': crontab(hour=0, minute=0)   # once a day
+    },
+}
+"""
+    'get_price': {
+        'task': 'tasks.tasks.ignite_crawler',
+        'schedule': crontab()   # every minute
+    },
+}
+"""
+"""
+'daily_report': {
+    'task': 'tasks.tasks.daily_report',
+    'schedule': crontab(hour=0, minute=0)
+}
+"""

@@ -1,30 +1,63 @@
 import datetime
 from pprint import pprint
+import logging
 
 import boto3
 
 from tasks.celery_settings import DEFAULT_REGION
 from tasks.celeryapp import celeryapp
+from gbl.models.aws import Region, AvailabilityZone, Instance, Product, SpotPrice
+from gbl.common import sess, sentry
 
 
 @celeryapp.task
 def crawl_region():  # once a day
     client = boto3.client('ec2', region_name=DEFAULT_REGION)
-    region_dict = client.describe_regions()
-    pprint(region_dict)
-    # TODO: save data to DB
+    region_list = client.describe_regions()['Regions']
+    prev_region = dict(sess.query(Region.name, Region).all())
+    new_region_list = []
+    for region_info in region_list:
+        if region_info['RegionName'] in prev_region:
+            new_region = prev_region[region_info['RegionName']]
+        else:
+            new_region = Region(region_info['RegionName'])
+        new_region.endpoint = region_info['Endpoint']
+        new_region_list.append(new_region)
+    sess.add_all(new_region_list)
+    try:
+        sess.commit()
+        logging.log(logging.INFO, 'Region Done')
+    except:
+        sess.rollback()
+        sentry.captureException()
+        logging.log(logging.CRITICAL, 'Region Error')
 
 
 @celeryapp.task
-def crawl_az(region_list):     # once a day
-    # TODO: get region_list from DB
-    result_dict = dict()
+def crawl_az():     # once a day
+    region_list = sess.query(Region).all()
+    prev_az = dict(sess.query(AvailabilityZone.name, AvailabilityZone).all())
+    new_az_list = []
+
     for region in region_list:
-        client = boto3.client('ec2', region_name=region)
+        client = boto3.client('ec2', region_name=region.name)
         az_dict = client.describe_availability_zones()
-        result_dict[region] = az_dict
-    pprint(result_dict)
-    # TODO: save data to DB
+
+        for az_info in az_dict['AvailabilityZones']:
+            if az_info['ZoneName'] in prev_az:
+                new_az = prev_az[az_info['ZoneName']]
+                new_az.region = region
+            else:
+                new_az = AvailabilityZone(region.id, az_info['ZoneName'])
+            new_az_list.append(new_az)
+    sess.add_all(new_az_list)
+    try:
+        sess.commit()
+        logging.log(logging.INFO, 'AZ Done')
+    except:
+        sess.rollback()
+        sentry.captureException()
+        logging.log(logging.CRITICAL, 'AZ Error')
 
 
 @celeryapp.task

@@ -1,7 +1,21 @@
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import types, Column, ForeignKey
 from sqlalchemy.orm import relationship
 
-from gbl.models.base import Base
+
+class BaseClass(object):
+    __table_args__ = {}
+
+    id = Column(types.Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    def __repr__(self):
+        if self.id:
+            return "<class {} ID: {}>".format(type(self).__name__, self.id)
+        else:
+            return "<class {} ID: None>".format(type(self).__name__)
+
+
+Base = declarative_base(cls=BaseClass)
 
 
 class Region(Base):
@@ -10,6 +24,9 @@ class Region(Base):
     name = Column(types.Unicode(16), nullable=False)
     endpoint = Column(types.Unicode(32), nullable=False)
 
+    def __init__(self, region_name):
+        self.name = region_name
+
 
 class AvailabilityZone(Base):
     __tablename__ = 'availability_zone'
@@ -17,6 +34,10 @@ class AvailabilityZone(Base):
     region_id = Column(types.Integer, ForeignKey('region.id'), nullable=False)
     region = relationship('Region', foreign_keys=[region_id])
     name = Column(types.Unicode(32), nullable=False)
+
+    def __init__(self, region_id, zone_name):
+        self.region_id = region_id
+        self.name = zone_name
 
 
 class Product(Base):
