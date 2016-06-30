@@ -1,0 +1,6 @@
+DEBUG = False
+
+DB_ECHO = False
+DB = 'postgresql://id:pw@host/db'
+
+SENTRY_DSN = '[app.getsentry.com]'
