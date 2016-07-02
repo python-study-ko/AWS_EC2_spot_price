@@ -91,26 +91,27 @@ def crawl_instance_type():  # once a day
 
 @celeryapp.task
 def crawl_spot_price(region, epoch):     # every minute triggered by ignite_crawler
-    instance_list = sess.query(Instance).all()
-    instance_type = [x.type for x in instance_list]
-
     end = datetime.datetime.strptime(epoch, '%Y-%m-%dT%H:%M:%S')
     start = end - datetime.timedelta(minutes=1)
     filters = [{"Name": "timestamp", "Values": [start.strftime('%Y-%m-%dT%H:%M:*')]}]
+    get_instance = False
 
     client = boto3.client('ec2', region_name=region)
     price_history = client.describe_spot_price_history(StartTime=start, EndTime=end, Filters=filters)
-    instance_set = set()
+    instance_list = [x.type for x in sess.query(Instance).all()]
+
     for history_info in price_history['SpotPriceHistory']:
-        if history_info['InstanceType'] not in instance_type:
-            instance_set.add(history_info['InstanceType'])
-    for instance in instance_set:
-        sess.add(Instance(type=instance))
-        sess.commit()
-    for history_info in price_history['SpotPriceHistory']:
-        sess.add(SpotPrice(az_name=history_info['AvailabilityZone'], product_desc=history_info['ProductDescription'],
-                           instance_type=history_info['InstanceType'], price=float(history_info['SpotPrice']),
-                           timestamp=history_info['Timestamp']))
+        new_price = SpotPrice(az_name=history_info['AvailabilityZone'], product_desc=history_info['ProductDescription'],
+                              instance_type=history_info['InstanceType'], price=float(history_info['SpotPrice']),
+                              timestamp=history_info['Timestamp'])
+        if new_price.instance_type not in instance_list:
+            get_instance = True
+        sess.add(new_price)
+
+    if get_instance:
+        crawl_instance_type()
+        sess.add_all()
+
     try:
         sess.commit()
         logging.log(logging.INFO, "Spot Price Done: {}".format(datetime.datetime.utcnow()))
