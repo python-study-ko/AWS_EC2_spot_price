@@ -33,6 +33,9 @@ class Instance(Base):
     type = Column(types.Unicode(16), primary_key=True, nullable=False)
     # TODO: add spec
 
+    def __init__(self, tpe):
+        self.type = tpe
+
 
 class SpotPrice(Base):
     __tablename__ = 'spot_price'
@@ -40,12 +43,18 @@ class SpotPrice(Base):
     id = Column(types.Integer, primary_key=True, autoincrement=True, nullable=False)
     az_name = Column(types.Unicode(32), ForeignKey('availability_zone.name'), nullable=False, index=True)
     az = relationship('AvailabilityZone', foreign_keys=[az_name])
-    product = Column(types.Unicode(16), nullable=False, index=True)
+    product_desc = Column(types.Unicode(16), nullable=False, index=True)
     instance_type = Column(types.Unicode(16), ForeignKey('instance.type'), nullable=False, index=True)
     instance = relationship('Instance', foreign_keys=[instance_type])
     timestamp = Column(types.DateTime, nullable=False)
     price = Column(types.Float, nullable=False)
 
+    def __init__(self, az_name, product_desc, instance_type, timestamp, price):
+        self.az_name = az_name
+        self.product_desc = product_desc
+        self.instance_type = instance_type
+        self.timestamp = timestamp
+        self.price = price
 """
 class SearchLog(Base):
     __tablename__ = 'search_log'

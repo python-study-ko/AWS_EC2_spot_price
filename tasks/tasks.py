@@ -1,12 +1,12 @@
 import datetime
-from pprint import pprint
 import logging
+from pprint import pprint
 
 import boto3
 
 from tasks.celery_settings import DEFAULT_REGION
 from tasks.celeryapp import celeryapp
-from gbl.models.aws import Region, AvailabilityZone, Instance, Product, SpotPrice
+from gbl.models.aws import Region, AvailabilityZone, Instance, SpotPrice
 from gbl.common import sess, sentry
 
 
@@ -31,6 +31,8 @@ def crawl_region():  # once a day
         sess.rollback()
         sentry.captureException()
         logging.log(logging.CRITICAL, 'Region Error')
+    finally:
+        sess.remove()
 
 
 @celeryapp.task
@@ -46,9 +48,9 @@ def crawl_az():     # once a day
         for az_info in az_dict['AvailabilityZones']:
             if az_info['ZoneName'] in prev_az:
                 new_az = prev_az[az_info['ZoneName']]
-                new_az.region = region
+                new_az.region_name = region.name
             else:
-                new_az = AvailabilityZone(region.id, az_info['ZoneName'])
+                new_az = AvailabilityZone(region.name, az_info['ZoneName'])
             new_az_list.append(new_az)
     sess.add_all(new_az_list)
     try:
@@ -58,25 +60,72 @@ def crawl_az():     # once a day
         sess.rollback()
         sentry.captureException()
         logging.log(logging.CRITICAL, 'AZ Error')
+    finally:
+        sess.remove()
+
+
+@celeryapp.task
+def crawl_instance_type():  # once a day
+    from bs4 import BeautifulSoup
+    import requests
+    import re
+    url = 'http://docs.aws.amazon.com/cli/latest/reference/ec2/describe-spot-price-history.html'
+    res = requests.get(url)
+    soup = BeautifulSoup(res.text, 'lxml')
+    tag = soup.find(string=re.compile(r't2.micro'))
+    lst = [x.strip() for x in tag.split('\n')[3:]]
+    prev_instance = dict(sess.query(Instance.type, Instance).all())
+    for instance in lst:
+        if instance not in prev_instance:
+            sess.add(Instance(instance))
+    try:
+        sess.commit()
+        logging.log(logging.INFO, "Instance Done")
+    except:
+        sess.rollback()
+        sentry.captureException()
+        logging.log(logging.CRITICAL, 'Instance Error')
+    finally:
+        sess.remove()
 
 
 @celeryapp.task
 def crawl_spot_price(region, epoch):     # every minute triggered by ignite_crawler
+    instance_list = sess.query(Instance).all()
+    instance_type = [x.type for x in instance_list]
+
     end = datetime.datetime.strptime(epoch, '%Y-%m-%dT%H:%M:%S')
     start = end - datetime.timedelta(minutes=1)
     filters = [{"Name": "timestamp", "Values": [start.strftime('%Y-%m-%dT%H:%M:*')]}]
 
     client = boto3.client('ec2', region_name=region)
     price_history = client.describe_spot_price_history(StartTime=start, EndTime=end, Filters=filters)
-    pprint(price_history)
-    # TODO: update product description, instance type
-    # TODO: save data to DB
+    instance_set = set()
+    for history_info in price_history['SpotPriceHistory']:
+        if history_info['InstanceType'] not in instance_type:
+            instance_set.add(history_info['InstanceType'])
+    for instance in instance_set:
+        sess.add(Instance(type=instance))
+        sess.commit()
+    for history_info in price_history['SpotPriceHistory']:
+        sess.add(SpotPrice(az_name=history_info['AvailabilityZone'], product_desc=history_info['ProductDescription'],
+                           instance_type=history_info['InstanceType'], price=float(history_info['SpotPrice']),
+                           timestamp=history_info['Timestamp']))
+    try:
+        sess.commit()
+        logging.log(logging.INFO, "Spot Price Done: {}".format(datetime.datetime.utcnow()))
+    except:
+        sess.rollback()
+        sentry.captureException()
+        logging.log(logging.CRITICAL, "Spot Price History Fail: {}".format(datetime.datetime.utcnow()))
+    finally:
+        sess.remove()
 
 
 @celeryapp.task
-def ignite_crawler(region_list):
-    # TODO: get region_list from DB
+def ignite_crawler():
+    region_list = [x.name for x in sess.query(Region).all()]
     epoch = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
     for region in region_list:
         crawl_spot_price.apply_async(args=[region, epoch], queue='crawl')
-    print("Ignition")
+        print("{} Ignition".format(region))

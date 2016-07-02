@@ -10,7 +10,7 @@
 ## Pre-requirements for Service
 
 - sudo apt-get update && sudo apt-get -y upgrade
-- sudo apt-get install postgresql postgresql-server-dev-9.3 python3-dev rabbitmq-server python3-pip
+- sudo apt-get install postgresql postgresql-server-dev-9.3 python3-dev rabbitmq-server python3-pip libxml2-dev libxslt-dev
 - sudo pip install virtualenv
 
 ## Requirements

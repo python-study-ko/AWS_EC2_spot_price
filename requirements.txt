@@ -22,3 +22,6 @@ six==1.10.0
 SQLAlchemy==1.0.13
 Werkzeug==0.11.10
 raven==5.21.0
+bs4==0.0.1
+requests==2.10.0
+lxml==3.6.0
