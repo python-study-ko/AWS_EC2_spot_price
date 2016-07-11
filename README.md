@@ -18,10 +18,4 @@
 - virtualenv -p python3 .venv
 - . .venv/bin/activate
 - pip3 install -r requirements.txt
-
-## Important Packages
-
-- boto3
-- flask
-- sqlalchemy
-- celery
+- for convenient develop, recommend `pip3 install ipython` to use IPython 5.0
