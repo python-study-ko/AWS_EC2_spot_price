@@ -1,13 +1,16 @@
 import datetime
 import logging
-from pprint import pprint
+import json
 
 import boto3
+import requests
+from bs4 import BeautifulSoup
+import re
 
 from tasks.celery_settings import DEFAULT_REGION
 from tasks.celeryapp import celeryapp
-from gbl.models.aws import Region, AvailabilityZone, Instance, SpotPrice
-from gbl.common import sess, sentry
+from gbl.models.aws import Region, AvailabilityZone, Instance, SpotPrice, OndemandPrice
+from gbl.common import sess, sentry, URL_DICT
 
 
 @celeryapp.task
@@ -66,9 +69,6 @@ def crawl_az():     # once a day
 
 @celeryapp.task
 def crawl_instance_type():  # once a day
-    from bs4 import BeautifulSoup
-    import requests
-    import re
     url = 'http://docs.aws.amazon.com/cli/latest/reference/ec2/describe-spot-price-history.html'
     res = requests.get(url)
     soup = BeautifulSoup(res.text, 'lxml')
@@ -81,12 +81,64 @@ def crawl_instance_type():  # once a day
     try:
         sess.commit()
         logging.log(logging.INFO, "Instance Done")
-    except:
+    except Exception as e:
         sess.rollback()
         sentry.captureException()
-        logging.log(logging.CRITICAL, 'Instance Error')
+        logging.log(logging.CRITICAL, 'Instance Error: {}'.format(e))
     finally:
         sess.remove()
+
+
+@celeryapp.task
+def crawl_on_demand():  # once a day
+    region_list = [x.name for x in sess.query(Region).all()]
+    instance_dict = dict(sess.query(Instance.type, Instance).all())
+    od_price_list = sess.query(OndemandPrice).all()
+    od_price_dict = dict([((x.region_name, x.instance_type, x.product), x) for x in od_price_list])
+
+    for url in URL_DICT.values():
+        res = requests.get(url)
+        regions = get_info(res.text)
+        for region in regions:
+            region_name = region['region']
+            if region_name not in region_list:
+                continue
+            for instance_info in region['instanceTypes']:
+                for instance_types in instance_info['sizes']:
+                    instance_type = instance_types['size']
+                    product_desc = instance_types['valueColumns'][0]['name']
+                    try:
+                        price = float(instance_types['valueColumns'][0]['prices']['USD'])
+                    except ValueError:
+                        price = None
+                    if instance_type not in instance_dict.keys():
+                        continue
+                    instance = instance_dict[instance_type]
+                    instance.set_spec(**instance_types)
+                    if (region_name, instance_type, product_desc) in od_price_dict:
+                        od_price = od_price_dict[(region_name, instance_type, product_desc)]
+                    else:
+                        od_price = OndemandPrice(region_name, instance_type, product_desc)
+                    od_price.set_price(price)
+                    sess.add_all([instance, od_price])
+    try:
+        sess.commit()
+        logging.log(logging.INFO, "Instance Spec, OD_Price Done")
+    except Exception as e:
+        sess.rollback()
+        sentry.captureException()
+        logging.log(logging.CRITICAL, "Instance Spec, OD_Price Fail: {}".format(e))
+
+
+def get_info(txt):
+    orig = txt.split('\n')[-1][9:-2]
+    orig2 = orig.replace('{', '{"')
+    orig3 = orig2.replace(',', ',"')
+    orig4 = orig3.replace(',"{', ',{')
+    orig5 = orig4.replace(':', '":')
+    orig6 = orig5.replace(',""', ',"')
+    j = json.loads(orig6)
+    return j['config']['regions']
 
 
 @celeryapp.task
@@ -129,4 +181,4 @@ def ignite_crawler():
     epoch = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
     for region in region_list:
         crawl_spot_price.apply_async(args=[region, epoch], queue='crawl')
-        print("{} Ignition".format(region))
+        logging.log(logging.INFO, "{} Ignition".format(region))
