@@ -149,16 +149,25 @@ def crawl_spot_price(region, epoch):     # every minute triggered by ignite_craw
     get_instance = False
 
     client = boto3.client('ec2', region_name=region)
-    price_history = client.describe_spot_price_history(StartTime=start, EndTime=end, Filters=filters)
-    instance_list = [x.type for x in sess.query(Instance).all()]
+    next_token = ""
+    while True:
+        price_history = client.describe_spot_price_history(StartTime=start, EndTime=end, Filters=filters,
+                                                           MaxResults=100, NextToken=next_token)
+        next_token = price_history.get('NextToken', "")
+        logging.log(logging.INFO, "{} length: {}, token: {}".format(region, len(price_history['SpotPriceHistory']), next_token))
+        instance_list = [x.type for x in sess.query(Instance).all()]
 
-    for history_info in price_history['SpotPriceHistory']:
-        new_price = SpotPrice(az_name=history_info['AvailabilityZone'], product_desc=history_info['ProductDescription'],
-                              instance_type=history_info['InstanceType'], price=float(history_info['SpotPrice']),
-                              timestamp=history_info['Timestamp'])
-        if new_price.instance_type not in instance_list:
-            get_instance = True
-        sess.add(new_price)
+        for history_info in price_history['SpotPriceHistory']:
+            new_price = SpotPrice(az_name=history_info['AvailabilityZone'], product_desc=history_info['ProductDescription'],
+                                  instance_type=history_info['InstanceType'], price=float(history_info['SpotPrice']),
+                                  timestamp=history_info['Timestamp'])
+            if new_price.instance_type not in instance_list:
+                get_instance = True
+            sess.add(new_price)
+        if next_token:
+            continue
+        else:
+            break
 
     if get_instance:
         crawl_instance_type()
