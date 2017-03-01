@@ -105,3 +105,5 @@ tasks/celery_settings.py
 .DS_Store
 .activate
 server/desin/
+collect_static/
+db.sqlite3

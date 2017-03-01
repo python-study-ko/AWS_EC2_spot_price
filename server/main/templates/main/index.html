@@ -1,0 +1,64 @@
+{% extends 'base_main.html' %}
+
+{# head #}
+{% block title %}SpotRecord{% endblock title %}
+{% block pagestyle %}{% endblock %}
+{% block headscript %}{% endblock %}
+{# end head #}
+
+{# body #}
+{% block contens %}
+    <div class="ui doubling four column grid">
+        <div class="column">
+            <div class="ui green inverted center aligned segment">
+                <div class="ui inverted statistic">
+                    <div class="value">
+                        000
+                    </div>
+                    <div class="label">
+                        수집중인 스팟 인스턴스
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="column">
+            <div class="ui olive inverted center aligned segment">
+                <div class="ui inverted statistic">
+                    <div class="value">
+                        0.00$
+                    </div>
+                    <div class="label">
+                        평균 금액
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="column">
+            <div class="ui yellow inverted center aligned segment">
+                <div class="ui inverted statistic">
+                    <div class="value">
+                        000
+                    </div>
+                    <div class="label">
+                        현재 기록중인 스팟 인스턴스 갯수
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="column">
+            <div class="ui orange inverted center aligned segment">
+                <div class="ui inverted statistic">
+                    <div class="value">
+                        000
+                    </div>
+                    <div class="label">
+                        현재 기록중인 스팟 인스턴스 갯수
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block bodyscript %}{% endblock %}
+{# end body #}

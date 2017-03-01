@@ -1,56 +1,54 @@
 {% extends 'base.html' %}
-
+{% load staticfiles %}
 
 {# ---head 시작----------------- #}
 
-{# head tag - link,meta등등 #}
 {% block head %}
+
+
     {% block meta %}{% endblock %}
     {% block link %}{% endblock %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/stylesheet.css' %}">
 
+    {# head title tag #}
+    <title>{% block title %}SpotRecord{% endblock title %}</title>
+
+    {# style tag #}
+    {% block style %}
+
+        {# 개별 페이지 css - 각 페이지에선 아래 블록을 확장하여 css추가하면 #}
+        {% block pagestyle %}{% endblock %}
+
+    {% endblock style %}
+
+    {# head태그에 달아야하는 스크립트 #}
+    {% block headscript %}{% endblock %}
+
 {% endblock head %}
-
-{# head title tag #}
-{% block title %}EVERYPYTHON{% endblock title %}
-
-{# style tag #}
-{% block style %}
-
-    {# 개별 페이지 css - 각 페이지에선 아래 블록을 확장하여 css추가하면 #}
-    {% block pagestyle %}{% endblock %}
-
-{% endblock style %}
-
-{# head태그에 달아야하는 스크립트 #}
-{% block headscript %}{% endblock %}
-
 {# ---head 끝------------------- #}
 
 {# ---body 시작------------------ #}
 {% block body %}
-<div id="holepage">
+    <div id="holepage">
 
-    {% include 'module/side.html' %}
-    <div id="right">
-        <div id="top">
-            <div class="ui top right" style="float: right; margin-right: 2%; color: #333;">
-                        <div class="ui simple dropdown item" style="padding: 7px; padding-top: 22px;">
-                            Hampus
-                            <i class="dropdown icon"></i>
-                            <div class="menu">
-                                <div class="item">Settings</div>
-                                <div class="item">Superadmin</div>
-                                <div class="item">Logout</div>
-                            </div>
-                    </div>
+        {# 사이드 메뉴바 #}
+        {% include 'module/sidebar.html' %}
+
+        <div id="right">
+
+            {# 우측 상단 바 #}
+            <div id="top">
+                {% include 'module/topbar.html' %}
             </div>
-        </div>
-        <div id="padding-right">
-            <!-- 이부분에 컨텐츠가 들어간다 -->
+
+            {# 메인 컨텐츠 #}
+            <div id="padding-right">
+                <!-- 이부분에 컨텐츠가 들어간다 -->
+                {% block contens %}{% endblock %}
+            </div>
+
         </div>
     </div>
-</div>
 {% endblock body %}
 {# 페이지 맨 아래에서 호출할 스크립트 #}
 {% block bodyscript %}{% endblock %}
