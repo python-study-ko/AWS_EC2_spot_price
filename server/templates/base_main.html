@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{# ---head 시작----------------- #}
+
+{% block head %}
+
+
+    {% block meta %}{% endblock %}
+    {% block link %}{% endblock %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/stylesheet.css' %}">
+
+    {# head title tag #}
+    <title>{% block title %}SpotRecord{% endblock title %}</title>
+
+    {# style tag #}
+    {% block style %}
+
+        {# 개별 페이지 css - 각 페이지에선 아래 블록을 확장하여 css추가하면 #}
+        {% block pagestyle %}{% endblock %}
+
+    {% endblock style %}
+
+    {# head태그에 달아야하는 스크립트 #}
+    {% block headscript %}{% endblock %}
+
+{% endblock head %}
+{# ---head 끝------------------- #}
+
+{# ---body 시작------------------ #}
+{% block body %}
+    <div id="holepage">
+
+        {# 사이드 메뉴바 #}
+        {% include 'module/sidebar.html' %}
+
+        <div id="right">
+
+            {# 우측 상단 바 #}
+            <div id="top">
+                {% include 'module/topbar.html' %}
+            </div>
+
+            {# 메인 컨텐츠 #}
+            <div id="padding-right">
+                <!-- 이부분에 컨텐츠가 들어간다 -->
+                {% block contens %}{% endblock %}
+            </div>
+
+        </div>
+    </div>
+{% endblock body %}
+{# 페이지 맨 아래에서 호출할 스크립트 #}
+{% block bodyscript %}{% endblock %}
+{# ---body 끝-------------------- #}
