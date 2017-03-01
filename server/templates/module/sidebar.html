@@ -1,0 +1,66 @@
+<!-- 메뉴 확장,축소 스크립트 -->
+    <script>
+        $(function() {
+            function handler1() {
+                $("#menu a.item .text").hide();
+                $("#logo img").hide();
+                $("#logo .ion-navicon").css('float', 'left');
+                $("#left-menu").css('width','60px');
+                $("#image-profile h3").hide();
+                $("#image-profile span").hide();
+                $("a#minimize i").removeClass('arrow left');
+                $("a#minimize i").addClass('arrow right');
+                $(this).one("click", handler2);
+            }
+            function handler2() {
+                $("#menu a.item .text").show();
+                $("#logo img").show();
+                $("#logo .ion-navicon").css('float', 'right');
+                $("#left-menu").css('width','195px');
+                $("#image-profile h3").show();
+                $("#image-profile span").show();
+                $("a#minimize i").removeClass('arrow right');
+                $("a#minimize i").addClass('arrow left');
+                $(this).one("click", handler1);
+            }
+            $("#minimize").one("click", handler1);
+        });
+    </script>
+
+    <side id="left-menu">
+        <div id="logo">
+            Spot
+        </div>
+        <div style="padding: 0px;">
+            <!-- 메뉴가 들아가는 부분 -->
+            <div class="ui vertical accordion menu" id="menu">
+                <a class="item" data-tab="dashboard">
+                    <i class="home icon"></i>
+                    <div class="text">대시보드</div>
+                </a>
+                <a class="item" href="products">
+                    <i class="archive icon"></i>
+                    <div class="text">변동 추이</div>
+                </a>
+                <a class="item" href="pages">
+                    <i class="block layout icon"></i>
+                    <div class="text">픽토그램</div>
+                </a>
+                <a class="item" href="newsletter">
+                    <i class="newspaper icon"></i>
+                    <div class="text">추천  </div>
+                </a>
+                <a class="item" href="admins">
+                    <i class="user icon"></i>
+                    <div class="text">관리자</div>
+                </a>
+                <a class="item" href="appearance">
+                    <i class="settings icon"></i>
+                    <div class="text">설정</div>
+                </a>
+                <a href="javascript:void();" id="minimize" style="text-align: center; position: relative; bottom: 0;">
+                    <i class="arrow left icon" style="float: none; font-size: 13px; text-align: center; color: white;"></i>
+                </a>
+            </div>
+        </div>
+    </side>
