@@ -102,3 +102,5 @@ ENV/
 config.py
 aws_celery.conf
 tasks/celery_settings.py
+.DS_Store
+.activate
