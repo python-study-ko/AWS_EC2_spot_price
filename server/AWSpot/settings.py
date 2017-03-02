@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # 장고 디버깅 툴바
     'debug_toolbar',
+    # 장고 익스텐션
+    'django_extensions',
     # 앱
     'main',
 ]
