@@ -107,3 +107,4 @@ tasks/celery_settings.py
 server/desin/
 collect_static/
 db.sqlite3
+settings.ini

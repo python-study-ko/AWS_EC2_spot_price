@@ -11,21 +11,33 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
-
+# ini파일 호출
+from configparser import RawConfigParser
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+config = RawConfigParser()
+config.read(os.path.join(BASE_DIR, 'settings.ini'))
+
+# SSL 적용 여부
+if config.get('deploy','SSL') == "True":
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '&7)r+%d5hx)_@zw!8u*=hei*wz@8g24*#zni1jw5u5mad6rb^7'
+SECRET_KEY = config.get('deploy','SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if config.get('deploy', 'DEBUG') == "True":
+    DEBUG = True
+elif config.get('deploy', 'DEBUG') == "False":
+    DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [config.get('deploy', 'ALLOWED_HOSTS')]
 
 
 # Application definition
@@ -109,9 +121,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+# 한국 설정
+LANGUAGE_CODE = config.get('language', 'LANGUAGE_CODE')
+TIME_ZONE = config.get('language', 'TIME_ZONE')
 
 USE_I18N = True
 
